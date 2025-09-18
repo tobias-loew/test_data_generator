@@ -5,9 +5,6 @@
 #include <string>
 #include <unordered_set>
 #include <unordered_map>
-
-#define TEST_DATA_GENERATE_CODE
-
 #include <fstream>
 #include <test_data_generator.hpp>
 
@@ -39,9 +36,9 @@ int main()
     double d = 4.8;
     quux(c, d, "jhhgjh");
     bar(c, d, std::string{ "aaa" });
-    foo(c, d, std::string{ "aaa" });
+    foo(c, d, std::string{ "bbb" });
     bar(-5, d);
-    quuux();
+    quuux(c, d, std::string{ "ccc" });
 
 
 #ifdef TEST_DATA_GENERATE_CODE

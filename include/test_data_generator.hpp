@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <sstream>
+#include <charconv>
 #include <type_traits>
 #include <utility>
 #include <boost/mp11.hpp>
@@ -26,12 +27,12 @@ namespace TEST_DATA_##name##_ns {
     };                                                                                                                                            \
                                                                                                                                                   \
     template<typename... Ts>                                                                                                                      \
-    constexpr bool is_##name##_callable(boost::mp11::mp_list<Ts...>) {                                                                            \
+    inline constexpr bool is_##name##_callable(boost::mp11::mp_list<Ts...>) {                                                                     \
         return is_func_##name##_callable<Ts...>;                                                                                                  \
     }                                                                                                                                             \
                                                                                                                                                   \
     template<typename types, size_t ArgIndex>                                                                                                     \
-    void handle_nth_arg_writable_ref2(std::stringstream& ss, const char* name, auto const& arg) {                                                 \
+    inline void handle_nth_arg_writable_ref2(std::stringstream& ss, const char* name, auto const& arg) {                                          \
         using ctypes = boost::mp11::mp_replace_at_c<                                                                                              \
             types,                                                                                                                                \
             ArgIndex,                                                                                                                             \
@@ -44,12 +45,12 @@ namespace TEST_DATA_##name##_ns {
     }                                                                                                                                             \
                                                                                                                                                   \
     template<typename types, size_t... ArgIndizes>                                                                                                \
-    void handle_nth_arg_writable_ref(std::stringstream& ss, const char* name, std::index_sequence<ArgIndizes...>, auto const&... args) {          \
+    inline void handle_nth_arg_writable_ref(std::stringstream& ss, const char* name, std::index_sequence<ArgIndizes...>, auto const&... args) {   \
         int dummy[] = { 0, ((void)handle_nth_arg_writable_ref2<types, ArgIndizes>(ss, name, args), 0) ... };                                      \
     }                                                                                                                                             \
 }                                                                                                                                                 \
                                                                                                                                                   \
-auto name(auto&&... args) {                                                                                                                       \
+inline auto name(auto&&... args) {                                                                                                                \
                                                                                                                                                   \
     std::stringstream ss;                                                                                                                         \
     ss << "{\n";                                                                                                                                  \
@@ -85,7 +86,7 @@ auto name(auto&&... args) {                                                     
 #define FORWARD_VAR(arg)    std::forward<decltype(arg)>(arg)
 
 
-std::string store_arg(double v) {
+inline std::string store_arg(double v) {
     std::stringstream ss;
     char buf[64] = {};
     std::to_chars(buf, buf + 63, v);
@@ -93,19 +94,15 @@ std::string store_arg(double v) {
     return ss.str();
 }
 
-std::string store_arg(std::string const& v) {
+
+inline std::string store_arg(std::string const& v) {
     std::stringstream ss;
     ss << '"' << v << '"';
     return ss.str();
 }
-//std::string write_type(double v) {
-//    return "double";
-//}
-//std::string write_type(std::string const& v) {
-//    auto n = typeid(std::string).name();
-//    return "std::string";
-//}
-std::string write_type(auto const& v) {
+
+
+inline std::string write_type(auto const& v) {
     std::string name = boost::core::demangle(typeid(v).name());
     if (name.starts_with("struct ") || name.starts_with("class ")) {
         name.erase(0, 6);
@@ -113,7 +110,8 @@ std::string write_type(auto const& v) {
     return name;
 }
 
-void store_arg_gen(std::stringstream& ss, size_t index, auto const& arg) {
+
+inline void store_arg_gen(std::stringstream& ss, size_t index, auto const& arg) {
     ss << "    using type_arg_" << index << " = " << write_type(FORWARD_VAR(arg)) << ";\n"
         << "    type_arg_" << index
         << " arg_"
@@ -123,13 +121,14 @@ void store_arg_gen(std::stringstream& ss, size_t index, auto const& arg) {
         << "};\n";
 }
 
+
 template<size_t... ArgIndizes>
-void store_args(std::stringstream& ss, const char* name, std::index_sequence<ArgIndizes...>, auto const&... args) {
+inline void store_args(std::stringstream& ss, const char* name, std::index_sequence<ArgIndizes...>, auto const&... args) {
     int dummy[] = { 0, ((void)store_arg_gen(ss, ArgIndizes, FORWARD_VAR(args)), 0) ... };
 }
 
 
-void store_call_gen(std::stringstream& ss, size_t index) {
+inline void store_call_gen(std::stringstream& ss, size_t index) {
     if (index > 0) {
         ss << ", ";
     }
@@ -138,7 +137,7 @@ void store_call_gen(std::stringstream& ss, size_t index) {
 
 
 template<size_t... ArgIndizes>
-void store_call(std::stringstream& ss, const char* name, std::index_sequence<ArgIndizes...>) {
+inline void store_call(std::stringstream& ss, const char* name, std::index_sequence<ArgIndizes...>) {
     ss << "    auto result = " << name << "(";
 
     int dummy[] = { 0, ((void)store_call_gen(ss, ArgIndizes), 0) ... };
@@ -147,8 +146,7 @@ void store_call(std::stringstream& ss, const char* name, std::index_sequence<Arg
 }
 
 
-
-void store_expected_result(std::stringstream& ss, const char* name, auto const& result) {
+inline void store_expected_result(std::stringstream& ss, const char* name, auto const& result) {
     ss << "    using type_expected_result = " << write_type(FORWARD_VAR(result)) << ";\n";
     ss << "    type_expected_result expected_result{" << store_arg(FORWARD_VAR(result)) << "};\n";
 }
